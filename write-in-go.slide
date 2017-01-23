@@ -1,0 +1,55 @@
+Write in Go
+: This is heavily based on Rob Pike's https://talks.golang.org/2012/splash.article
+: Name of the talk ispired by https://www.youtube.com/watch?v=mur2aRsRxZ0
+The Go Programming Language
+15:00 27 Jan 2017
+Tags: go, programming
+
+Henrique Vicente
+Software Engineer, Liferay
+henriquevicente@gmail.com
+https://henvic.github.io/
+@henriquev
+
+* Ultra-large-scale systems pain points
+- slow builds
+- uncontrolled dependencies
+- each programmer using a different subset of the language
+- poor program understanding (code hard to read, poorly documented, and so on)
+- duplication of effort
+- cost of updates
+- version skew
+- difficulty of writing automatic tools
+- cross-language builds
+
+_Reference:_ Rob Pike's 2012 talk [[https://talks.golang.org/2012/splash.article][Go at Google: Language Design in the Service of Software Engineering]].
+
+* Experiment
+Go Started as an experiment by Google engineers
+
+.image images/team.png
+.caption (From left to right) Robert Griesemer, Rob Pike and Ken Thompson (Source: [[http://cse360fall13.wikispaces.asu.edu/Google+Go#Origins%20of%20Go][Origins of Go]])
+
+: it is said that it was during slow 45min builds that Go was conceived.
+
+* The Go Programming Language
+.image images/gopher-in-airplane.jpg
+.caption _Gopher_ by [[http://www.reneefrench.com][Renée French]]
+Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.
+
+* Dependencies in Go
+* Packages
+* Standard library
+* Remote packages
+* Syntax
+* Naming
+* Semantics
+* Concurrency
+* Memory management
+* Type system
+* Interfaces or "sets of methods"
+* Error handling
+* Tools
+* Testing
+* Conclusion
+* Summary
