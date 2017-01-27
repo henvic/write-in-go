@@ -1,0 +1,4 @@
+var ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+
+doSomething(ctx)
+cancel()

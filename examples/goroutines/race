@@ -1,0 +1,23 @@
+$ go run -race goroutines.go
+==================
+WARNING: DATA RACE
+Read at 0x00c42007a188 by goroutine 6:
+  main.main.func1()
+      /Users/henvic/Documents/write-in-go/examples/goroutines/goroutines.go:15 +0x3f
+
+Previous write at 0x00c42007a188 by main goroutine:
+  main.main()
+      /Users/henvic/Documents/write-in-go/examples/goroutines/goroutines.go:13 +0xc1
+
+Goroutine 6 (running) created at:
+  main.main()
+      /Users/henvic/Documents/write-in-go/examples/goroutines/goroutines.go:16 +0x97
+==================
+i = 1
+i = 2
+i = 2
+i = 4
+i = 5
+another : 2017-01-26 03:35:15.019235029 -0800 PST
+Found 1 data race(s)
+exit status 66

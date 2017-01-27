@@ -1,0 +1,4 @@
+var errStream1 = os.Stderr // derived (*os.File)
+errStream2 := os.Stderr // derived (*os.File), short variable declaration
+var errStream3 io.Writer // explicit (io.Writer)
+var errStream4 io.Writer = os.Stderr // explicit declaration (io.Writer) + initialization
