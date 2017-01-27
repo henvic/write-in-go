@@ -1,6 +1,12 @@
 Write in Go
-: This is heavily based on Rob Pike's https://talks.golang.org/2012/splash.article
+: This talk is heavily based on Rob Pike's Go at Google: Language Design in the Service of Software Engineering 2012 article
+: https://talks.golang.org/2012/splash.article
 : Name of the talk ispired by https://www.youtube.com/watch?v=mur2aRsRxZ0
+: MUST READ UNTIL EOF
+: SHOULD: System Preferences → General → Show scroll bars: Always
+: SHOULD: Maximize notes window size
+: SHOULD: Check if notes are small enough to be read without scrolling
+: EOF
 The Go Programming Language
 15:00 27 Jan 2017
 Tags: go, programming
@@ -11,45 +17,453 @@ henriquevicente@gmail.com
 https://henvic.github.io/
 @henriquev
 
-* Ultra-large-scale systems pain points
-- slow builds
-- uncontrolled dependencies
-- each programmer using a different subset of the language
-- poor program understanding (code hard to read, poorly documented, and so on)
-- duplication of effort
-- cost of updates
-- version skew
-- difficulty of writing automatic tools
-- cross-language builds
+* Go was designed to solve Google's engineering scalability problems
 
-_Reference:_ Rob Pike's 2012 talk [[https://talks.golang.org/2012/splash.article][Go at Google: Language Design in the Service of Software Engineering]].
+System
+
+- ~1 million servers
+- communication between services
+- slow builds, cross-language builds
+- uncontrolled dependencies
+
+Engineering
+
+- single code tree
+- poor program understanding
+- each programmer using a different subset of a language
+- single code tree
+
+: Go was designed to solve Ultra-large-scale engineering scalability problems
+: According to one of the designers, Robert Pike, these issues can't be resolved by individual features on a programming language.
+: Couldn't these problems be solved with, say, C++ or another language? For starts, many things Go solves by removing complication. And most popular modern languages are converging. Today you can't really tell apart some Java and Javascript code. The problem domains seems a little bit uncontrolled.
+
+_References:_ [[https://talks.golang.org/2012/splash.article][Go at Google: Language Design in the Service of Software Engineering]], [[https://talks.golang.org/2016/applicative.slide][Program your next server in Go]].
 
 * Experiment
-Go Started as an experiment by Google engineers
 
 .image images/team.png
 .caption (From left to right) Robert Griesemer, Rob Pike and Ken Thompson (Source: [[http://cse360fall13.wikispaces.asu.edu/Google+Go#Origins%20of%20Go][Origins of Go]])
 
+: And here enters Go. An attempt to address these issues on the domain of large-scale software development.
 : it is said that it was during slow 45min builds that Go was conceived.
+: This is also why many claimed that Go missed particular features or methodologies common in many modern languages
 
 * The Go Programming Language
 .image images/gopher-in-airplane.jpg
 .caption _Gopher_ by [[http://www.reneefrench.com][Renée French]]
 Go is an open source programming language that makes it easy to build simple, reliable, and efficient software.
 
-* Dependencies in Go
+* Packages and dependencies in Go
+- packages names are unique (can be overriden), package paths are not
+- No file.h :)
+- Defined by a string (path)
+- Unused package or variable → compile-time error
+- No need to import packages you use only transitively
+- No import cycles allowed on the dependency graph
+
+.code examples/import/json
+
+: The lack of C-style header files is an advantage for there are less files to open and validating during builds.
+: Instead of having header files, Go just have the source code to analyse.
+: compile-time error for unused dependencies guarantees a precise dependency tree with no extraneous edges and minimized compilation time
+: Google has measured compilation of large programs written in Go and found it more than 40 times faster than C++ counterparts
+: By the way, "A little copying is better than a little dependency." is a Go proverb.
+: When you have a little code you need somewhere else, it is often better to just copy it instead of extracting it to a separate package adding complexity to your dependency graph.
+: Having cycles bloats the code base with code difficult to work on individually and to test and use, so Go does not allow it on the dependency graph.
+
+* imports
+.image images/math-big-imports.png 550 _
+
+* import graphs
+.image images/math-big-import-graph.png 450 _
+.caption [[https://godoc.org/math/big?import-graph][math/big import graph]]
+: These dependency resolving ideas where mostly inspired by Plan 9's C. For example, its non-ANSI-standard approach to solving dependencies (including it only once instead of, say, 37 times for sys/stat.h on the Unix "ps" command in 1984).
+: And when evaluating an import only the data being exported, what reduces the amount of the required for compilation exponencially than the model used in, say, C and C++.
+: Another benefit is the lack of having to keep header files updated related to the implementation.
+: By not having it, the users of the language have one less thing to worry about and the compiler, one less thing to verify.
+
 * Packages
+- standard library
+- "relative"
+- remote
+- internal (unimportable outside the source subtree)
+
+Don't use relative package paths.
+
+Use "go get" friendly paths:
+
+$ go get github.com/henvic/pseudoterm → import "github.com/henvic/pseudoterm"
+
+.image images/gophertraining.png 180 _
+
+* Using a package
+1. import "github.com/henvic/pseudoterm"
+2. var story = pseudoterm.Story{}
+
+Using a package for side-effects:
+- import _ "net/http/pprof"
+
+.image images/gopherswrench.jpg 380 _
+
+: go get is used to fetch source code from different tools, such as svn, mercurial, git, or Bazaar
+: Go packages paths can be arbitrary strings. It is uncentralized.
+: Binary libraries (as in, having no access to the source code) are close to unheard of. It is a nightmare to work with and you are probably better of finding an alternative, if you must.
+: internal packages are only imported from within the same source subtree, so /a/b/c/internal/d can only be imported from within /a/b/c
+: You can also use a package for side-effects. Say, the pprof profiler for HTTP requests. By the way, you can (and should) run this profiler all times. There are no performance drawbacks. The only thing you have to keep in mind is that if you do so you MUST protect its web endpoints for the sake of your application's security.
+
 * Standard library
-* Remote packages
+Go standard library is very powerful.
+
+Before trying external libraries try to solve your problems with its standard library.
+
+Resources:
+[[https://golang.org/pkg/][Go Standard Library and others]]
+[[https://godoc.org/][GoDoc: Search for Go Packages]]
+[[https://github.com/golang/go/wiki/Projects][Projects at the Go wiki]]
+
+.image images/gophercloud.png _ 260
+
+: Go standard library is very powerful. Whenever possible, you should try to stick with it. Avoiding unnecessary dependencies is recommended, if you can. This is even more important if you are designing a library yourself.
+
+* Before continuing... Set your $GOPATH
+1. goto golang.org
+2. download Go for your operating system
+2. Set your $GOPATH environment variable if 1.8 is not out yet (February, 2016)
+
+Go ≥ 1.8 uses ~/go by default when $GOPATH environment variable is not set
+
+`Warning:` considering Go 1.8 release new behavior on the next slides
+
+.image images/gopherswim.jpg _ 300
+
+: The current approach most people do is set it to ~/go even though documentation recommends <your home directory>/gocode
+: GOPATH must be set to get, build and install packages outside the standard Go tree.
+: or... take your chances and download the 1.8 Release Candidate at your own risk
+: and yes, go has goto
+
+* Vendoring and versioning packages
+- Packages in ~/go/src
+- Packages in ~/go/src/<your-package-path>/vendor (i.e., ~/go/src/github.com/henvic/foo/vendor)
+- vendor directory is usually committed to the project repo
+- usually semantic versioning is used with path + version / tag
+
+.image images/gopherrunning.jpg 220 _
+
+: There is no official vendor feature on Golang.
+: There are many community created implementations of package managers and, interestingly, many of them use a popular Godep format that might as well, one day, be officially adopted.
+: I personally use glide on the WeDeploy CLI. It doesn't use Godep, but I prefer it because I like its toolkit better.
+: vendor directory is usually committed to the project repo, which I personally dislike, but am convinced this is a good idea nonetheless. The good part is that it is only pure text. It is not like Java, where you have at some point hundreds of thousands of .jar binaries bloating your repositories forever on the long run (and shallow cloning has its own problems).
+
 * Syntax
+: Anyone experienced with a procedural language should be able to read a Go code and have an idea about what it is without being confused by strange notation
+- Go is expressive and concise.
+- Has the right set of features
+: It has orthogonal features. That means, each feature covers one topic. This means there are less ways to do things, and the existing ways tend to be the better ones. This diminishes the amount of code smell and make code reuse better
+- Easy to parse: both for computers and humans
+
+Only 25 reserved keywords:
+.code examples/keywords/keywords
+
+: In comparison: C has 32 keywords. ECMAScript 5, 47; ECMAScript 6, 48; Java, 50.
+: It is actually so simple to parse it can be parsed without type information or a symbol table.
+
+Explicit and derived variable type declaration:
+.code examples/types/types
+: You can see there are several ways to declare variables
+: Later I am going to talk about what is going on with errStream3 and errStream4 when I talk about interfaces
+
+* Syntax: error handling
+No exceptions. Return errors or panic.
+.image images/towel.jpg 300 _
+.caption [[http://www.adverts.ie/other-antiques-collectables/hitchhiker-s-guide-to-the-galaxy-don-t-panic-towel/8319597][Hitchhiker's Guide to the Galaxy - DON'T PANIC Towel]]
+
+* Syntax: error handling
+.play examples/errors/dont-panic.go
+
+* Syntax: defer, panic, and recover
+.play examples/errors/let-it-panic.go
+: When you have some method that panics, have a non-panicking method available.
+
+* Syntax: defer, panic, and recover
+.play examples/errors/regexp-example.go
+
+* Syntax: defer, panic, and recover
+.play examples/errors/recover-from-panic.go
+
+: A defer statement pushes a function call onto a list. The list of saved calls is executed after the surrounding function returns. Defer is commonly used to simplify functions that perform various clean-up actions. For example, closing a file after reading it.
+: Here we use to it to recover from a panic. Recovering from a panic is not really Go idiomatic and you should always prefer to return errors instead and only resource to it when an unrecoverable error happens.
+
+: Errors are treated as values on Golang. It is believed errors should be use the control flow
+: It is believed special handling of errors such as Java's exception handling distorts the control flow for a program.
+: As a result, programs can be longer, but it is believed the gains outweights the costs by making things more clear and simpler. Exception makes it to easy to miss edge cases and handle things improperly.
+
+* Syntax: no classes; types and methods on types instead
+.play examples/syntax/car.go
+: Go does not have classes. However, you can define methods on types.
+: A method is a function with a special receiver argument.
+: In this case, the receiver is of type Flight
+
+* Syntax: functions and returning multiple values
+In Go functions can return multiple values. A common case is to return the function result and an error value as a pair, like this:
+
+.play examples/syntax/syntax.go
+
+* Syntax: variadic arguments arguments on functions
+.play examples/syntax/functions.go
+
 * Naming
+.code examples/naming/naming.go
+
+Capitalized letter at the beginning → exported name
+Can you tell what names are exported and what are not?
+
+: in Go there is not public / private access modifiers keywords like in Java
+: instead, you define accessibility by using a capital letter on the beginning of a name
+: so here, the Ingredient type, Pizza type, and Pizza's Price method are public.
+: everything else is not
+: When importing a package you can refer only to its exported names.
+: The cool part of it is that you can know if a variable is exported or not by only looking at it
+
+* Naming: Compact scope hierarchy:
+
+- universe (predeclared identifiers such as int and string)
+- package (all the source files of a package live at the same scope)
+- file (for package import renames only; not very important in practice)
+- function (the usual)
+- block (the usual)
+
+.image images/gopherslide2smblue.jpg 300 _
+
+: One important thing is that a package qualifier is always present for imported names, this decouples packages.
+: And method overloading is not supported by design
+
 * Semantics
+- Compiled
+- Statically typed
+- Procedural with pointers
+- "industrial" robustness
+
+.image images/gopher.jpg 320 _
+
+: One of the main advantages of Go in my point of view is that it is a language that was designed to resolve problems on a specific problem domain (server-side applications) without trying to be clever or doing tricks that might shadow what is really happening behind the scenes. For example, it does not even have structures for things like map, reduce, or filter. Nor does it try to hide its downsides.
+: By being compiled and generating statically linked binaries by default we are able to distribute binaries and avoid issues so common to interpreted languages such as JavaScript, Ruby, or Python, in where it is a nightmare to deal with different environments or install dependencies. By having pointers to structs instead of to memory sections we also avoid the common C / C++ error of access violation (segment faults), reading or writing to wrong memory positions and so on. Also, with Go you can malloc memory, but you don't need to worry about freeing it. It is garbage collected.
+: If you stay away from the syscall (that is system-dependent) and unsafe packages, you are probably writing portable code (though certain details such as directory separator or line ending makes it a little bit harder).
+
 * Concurrency
+.image images/csp.jpg _ 200
+.caption [[https://www.amazon.com/Communicating-Sequential-Processes-International-Computing/dp/0131532715][C. A. R. Hoare, Communicating Sequential Processes]]
+
+- Go's concurrency model is a variant of CSP with first-class channels
+- CSP is added to the language in a mostly orthogonal way
+
+: CSP was used because both of familiarity of one of the language's designers as well as for it being possible to add to the language without affecting its other parts.
+
+* Concurrency
+- [[https://blog.golang.org/concurrency-is-not-parallelism][Concurrency is not parallelism]]
+- Concurrency is about dealing with lots of things at once. Parallelism is about doing lots of things at once.
+
+Why is it so important to have a great concurrency support?
+
+- Multicore machines
+
+.image images/gophercomplex6.jpg
+
+* Concurrency on Java vs. Golang
+- Java uses threads
+- Go uses a "light thread" concept (goroutines)
+- goroutines have growable segmented stacks and can run on multiple threads
+- goroutines have faster startup time (given it runs on top of already existing native threads)
+- You can use channels to share messages between goroutines
+- Go has a powerful race detector integrated (e.g., go test -race)
+: Concurrency is hard on Java. It is easy to misuse the threads and end up with an "out of memory" error.
+: This is not to say that it is impossible to build solid programs with concurrency using Java, but that handling threads and scaling them is a lot harder.
+: Goroutines on the other hand frees you from handling resources and let you focus on solving your program in a more transparent way
+
+* Concurrency tl;dr
+.image images/concurrency.svg
+: Image from https://talks.golang.org/2014/gocon-tokyo.slide
+
+* Goroutines
+.play examples/goroutines/goroutines.go
+
+: Here is an example of using goroutines
+: What would happen if I ran this?
+: Wait, what is happening with the printed value?
+
+* Goroutines: data race condition
+.code examples/goroutines/race
+: Note that there is a data race condition there accessing the "i" variable
+: I can fix it without resorting to locks by copying the value to a new variable, "num".
+
+* Goroutines with data race fixed
+.play examples/goroutines/goroutines-fixed.go
+: You might ask: why am I using time.Sleep there? Because the main thread won't wait for goroutines to end. So, I am doing a hack here. Of course, in a real use case I would handle this in a more appropriate way, such as using channels to communicate it or async queue waiting.
+
+* Goroutines with data race fixed AND improved with queue waiting
+.play examples/goroutines/goroutines-fixed-improved.go
+
+* Channels
+.play examples/channels/channels.go
+
 * Memory management
-* Type system
-* Interfaces or "sets of methods"
-* Error handling
+: Go has no memory-freeing operation
+: And, well, you can avoid the 'stop the world' problem of garbage collection on important pieces of your code, if you really must.
+
+"The language is much easier to use because of garbage collection.
+
+Experience with Java in particular as a server language has made some people nervous about garbage collection in a user-facing system. The overheads are uncontrollable, latencies can be large, and much parameter tuning is required for good performance. Go, however, is different. Properties of the language mitigate some of these concerns. Not all of them of course, but some." ~ Rob Pike
+
+: Plus, data ownership can be tricky to manage when we are talking about a concurrent object-oriented language, so it's important to have automatic memory management.
+
+* Composition over inheritance
+- No subclassing → no type hierarchy, easy to understand
+
+: Imagine if you have methods overriding others as in, say, Java. If you want to know what is happening you have to look at the entire "chain of custody" (and, well, you even have to think check for function overloading)
+
+: Composing by grouping methods provides a better and more robust alternative to subclassing
+: and overriding methods as done, say, in Java. You have an obvious "chain of custody".
+: "The composition design is looser (even ad hoc), organic, decoupled, independent, and therefore scalable." ~ Rob Pike
+
+.code examples/interfaces/interfaces.go
+
+No "implements" necessary. Implementation happens implicitly.
+See [[research.swtch.com/interfaces][Go Data Structures: Interfaces]]
+
+: "Interface satisfaction is statically checked at compile time so despite this decoupling interfaces are type-safe." ~ Pike - so if you forget to implement a method necessary for your needs your program is not going to compile
+
+* Composition over inheritance: errors
+.play examples/interfaces/errors.go
+
+: So the error type is an interface type. Can you tell me what it is?
+
+* Composition over inheritance: error interface
+.code examples/interfaces/error.go
+
+Tip: If you want to wrap your errors, you might want to consider using [[https://github.com/hashicorp/errwrap][errwrap]].
+
+By the way…
+
+"It was a deliberate choice not to incorporate exceptions in Go. Although a number of critics disagree with this decision, there are several reasons we believe it makes for better software.
+
+First, there is nothing truly exceptional about errors in computer programs. For instance, the inability to open a file is a common issue that does not deserve special linguistic constructs; if and return are fine." ~ Rob Pike
+
+: and the multiple return values comes really in hand for this
+
+* Context
+Useful for passing to all the goroutines involved in handling a request, across API, and process boundaries:
+
+- request-scoped values
+- cancelation signals
+- deadlines
+
+.code examples/context/context
+.image images/gopherhat.jpg 100 _
+: You should always cancel a cancellable cancel after it is done to free resources associated with it
+: You should use context values only for request-scoped data that transit processes and APIs
+
+* Reflection
+- [[https://blog.golang.org/laws-of-reflection][Laws of Reflection]]
+- [[https://golang.org/doc/effective_go.html#type_switch][Effective Go: Type switch]]
+
+.play examples/reflect/reflect.go
+
+: Sometimes reflection might be useful to inspect objects or when you receive a interface as a type.
+: However, this is not considered Go idiomatic and is best avoided when possible
+
 * Tools
+- [[https://golang.org/cmd/gofmt/][gofmt]]: format Go code
+- [[https://golang.org/cmd/vet/][govet]]: examines Go source code and reports suspicious constructs
+- [[https://github.com/alecthomas/gometalinter][gometalinter]]: collection o Go linting tools
+- many more…
+
+: it is interesting to say that, while Go tries not to enforce a coding style, it still enforces some styling rules (say, using TABs) so you almost certainly want to use gofmt automatically with your text editor. I highly recommend trying Visual Code Studio.
+
+Tip: [[https://code.visualstudio.com/][Visual Studio Code]] has a nice Golang support (including debugging). Add the Go extension to it.
+
+: Don't forget about installing the Go extension. And, maybe, Sublime Text Keymap, if you are used to it.
+
 * Testing
-* Conclusion
-* Summary
+.code examples/testing/code.go
+.code examples/testing/code_test.go
+: Go's testing package contains test types for benchmark tests and regular tests.
+: Here is an example of a regular test. Please note that I do a comparison using "if" directly, with no help of assertion libraries. This is Go's idiomatic way to test thing.
+: The reasoning for not providing assertion libraries (though there are many) is that tests should be explicit and it is common for people using assertion libraries to not test correctly and adapting their code to match their assertions without reasoning
+
+* Testing
+Useful commands:
+
+Run test for a single function "TestCreate" (it takes a Regular Expression):
+
+ go test -run=TestCreate$
+
+Run tests for all packages and subpackages, but vendors:
+
+ go test $(go list ./... | grep -v /vendor/)
+
+Run test for the current package and generate a HTML coverage report:
+
+ go test -coverprofile=coverage.out && go tool cover -html coverage.out -o coverage.html
+
+* Test coverage
+.image images/coverage.png 600 _
+
+* Profiling Go applications
+
+.link https://blog.golang.org/profiling-go-programs
+
+- go tool hprof
+- you can run the net/http/pprof always, as long as you protect its endpoint
+- web interface
+
+.image images/profiling-go-programs_havlak1a-75.png 300 _
+
+: use profiler to find where you can improve your program's performance
+: but remember, premature optimization is the root of all evil
+
+: CPU, memory, blocking
+: https://blog.golang.org/profiling-go-programs
+
+* Handling HTTP requests with a simple server
+.code examples/httpserver/httpserver.go
+: No need for nginx or other sever: Go's native HTTP server can scale well
+
+* tl;dr talk
+.image images/funfast.svg
+: Image from https://talks.golang.org/2014/gocon-tokyo.slide
+
+* 
+.image images/gopherbw.png
+: Questions?
+: Let's go hands on the basics now
+
+* Hands on
+The basics
+.link https://tour.golang.org/basics
+
+Help
+
+- [[https://golang.org/doc/install][Download the Go distribution https://golang.org/doc/install]]
+- [[https://golang.org/doc/code.html][How to Write Go Code]]
+- [[https://play.golang.org/][The Go Playground https://play.golang.org/]]
+- [[https://tour.golang.org/list][A Tour of Go https://tour.golang.org/list]]
+
+: Installing it with your Linux distribution package manager or with brew is fine
+: Just check if you have the latest version afterwards
+
+* Resources
+
+- [[https://github.com/golang/go/wiki][Go wiki]]
+- [[https://github.com/golang/go/wiki/Learn][Go wiki: Learn]]
+- [[https://gobyexample.com/][Go by Example]]
+- [[https://go-proverbs.github.io][Go Proverbs]]
+- [[https://golang.org/doc/effective_go.html][Effective Go]] (single-page doc)
+- [[https://talks.golang.org/][Go talks]]
+
+Other
+
+- [[https://speakerdeck.com/henvic][Talks by Henrique Vicente]]
+- [[https://talks.golang.org/2014/gocon-tokyo.slide][Go: 90% Perfect, 100% of the time.]]
+
+* Write in Go
+
+.iframe https://www.youtube.com/embed/mur2aRsRxZ0 480 960
